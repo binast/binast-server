@@ -1,1 +1,1 @@
-document.getElementById('status').innerText = 'OK';
+document.getElementById('status').innerText = 'PLAIN JS';
