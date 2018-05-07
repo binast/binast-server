@@ -1,14 +1,14 @@
 # binast-server
 Running server:
 ```
-./serveBinAST.py [LOCATION OF WWW FILES]
+./serveBinAST.py [<LOCATION OF RESOURCES TO SERVE>]
 ```
 
 To test basics in browser: load https://localhost:8443/simple.html, accept self-signed localhost cert, confirm output is 'Script run status: BINAST'
 
 To test Facebook.com snapshot in browser:
 1. Start server with ./serveBinAST.py ./fb_bench/
-1. Load https://localhost:8443/newsfeed_bench.html
+1. Load https://localhost:8443/newsfeed_bench.htm
 If the browser advertises BinAST support, this should serve a BinAST version of the site.
 
 To convert a directory tree to BinAST, use the ./convertJStoBinAST.bash script. Note that the encoder blows away the original .js files.
