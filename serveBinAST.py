@@ -27,7 +27,7 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         s.send_response(200)
 
         if path.endswith('.js'):
-            binast_path = path + '.binast'
+            binast_path = path + '.binjs'
             if accepts_binast and os.path.exists(binast_path):
                 path = binast_path
                 s.send_header('Content-type', 'application/javascript-binast')
