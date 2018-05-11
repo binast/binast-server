@@ -2,10 +2,14 @@
 import os
 import ssl
 import sys
+import StringIO
+import gzip
 import BaseHTTPServer
 
 HOST = 'localhost'
 PORT = 8443
+
+SERVE_GZIP = True
 
 CONTENT_TYPES = {
     '.css': 'text/css; charset=utf-8',
@@ -20,28 +24,38 @@ CONTENT_TYPES = {
 www_path = os.getcwd()
 
 class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
-    def do_GET(s):
-        file_path = s.path.lstrip('/')
+    def do_GET(self):
+        file_path = self.path.lstrip('/')
         if '?' in file_path:
             file_path = file_path[:file_path.rindex('?')]
             print "Fixed path", file_path
         path = os.path.join(www_path, file_path)
 
-        headers = s.headers
+        headers = self.headers
         accept = headers['Accept'].lower().split(',')
         accepts_binast = 'application/javascript-binast' in accept
+
+        if 'Accept-Encoding' in headers:
+            accept_encoding = headers['Accept-Encoding'].lower().split(',')
+            accepts_gzip = 'gzip' in accept_encoding
+        else:
+            accepts_gzip = False
 
         print 'Received header:\n' + str(headers) + '\n'
 
         if not os.path.exists(path):
             print 'Path does not exist:', path
-            s.send_response(404)
-            s.send_header('Content-type', 'text/html; charset=utf-8')
-            s.end_headers()
-            s.wfile.write('404 File not found')
+            self.send_response(404)
+            self.send_header('Content-type', 'text/html; charset=utf-8')
+            self.end_headers()
+            self.wfile.write('404 File not found')
             return
 
-        s.send_response(200)
+        self.send_response(200)
+
+
+        if accepts_gzip and SERVE_GZIP:
+            self.send_header('Content-Encoding', 'gzip')
 
         file_ext = os.path.splitext(path)[1].lower()
 
@@ -49,17 +63,29 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             binast_path = path.rstrip('.js') + '.binjs'
             if accepts_binast and os.path.exists(binast_path):
                 path = binast_path
-                s.send_header('Content-type', 'application/javascript-binast')
+                self.send_header('Content-type', 'application/javascript-binast')
             else:
-                s.send_header('Content-type', 'application/javascript')
+                self.send_header('Content-type', 'application/javascript')
+
         elif file_ext in CONTENT_TYPES:
-            s.send_header('Content-type', CONTENT_TYPES[file_ext])
+            self.send_header('Content-type', CONTENT_TYPES[file_ext])
         else:
             print 'Error: unrecognized content type:', file_ext, "from", path
-            s.send_header('Content-type', 'text/plain;charset=utf8')
+            self.send_header('Content-type', 'text/plain;charset=utf8')
 
-        s.end_headers()
-        s.wfile.write(open(path, 'r').read())
+        self.end_headers()
+        file_contents = open(path, 'r').read()
+        if accepts_gzip and SERVE_GZIP:
+            file_contents = self.gzip_encode(file_contents)
+
+        self.wfile.write(file_contents)
+
+    def gzip_encode(self, content):
+        out = StringIO.StringIO()
+        gf = gzip.GzipFile(fileobj=out, mode='w', compresslevel=5)
+        gf.write(content)
+        gf.close()
+        return out.getvalue()
 
 if __name__ == '__main__':
     if len(sys.argv) >= 2:
