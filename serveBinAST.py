@@ -74,7 +74,7 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             self.send_header('Content-type', 'text/plain;charset=utf8')
 
         self.end_headers()
-        file_contents = open(path, 'r').read()
+        file_contents = open(path, 'rb').read()
         if accepts_gzip and SERVE_GZIP:
             file_contents = self.gzip_encode(file_contents)
 
@@ -82,7 +82,7 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def gzip_encode(self, content):
         out = StringIO.StringIO()
-        gf = gzip.GzipFile(fileobj=out, mode='w', compresslevel=5)
+        gf = gzip.GzipFile(fileobj=out, mode='wb', compresslevel=5)
         gf.write(content)
         gf.close()
         return out.getvalue()
